@@ -9,11 +9,22 @@ import Foundation
 import UIKit
 import SQLite3
 
+//import GRDB
+
+
 class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
     
     ///////////////////////////////////////////////////////
     // date, description, amount, balance WHAT MOM WANTS //
     ///////////////////////////////////////////////////////
+    
+    struct Info {
+        var date: String
+        var description: String
+        var amount: Double
+        var totalStr: String
+    }
+    var count = 0;
     
     /*
      we already have balance and amount. now we need date and description
@@ -32,37 +43,40 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     
     var db: OpaquePointer?
     
-    
-    
-    struct Info {
-        //var id: Int
-        var date: String
-        var description: String
-        var amount: Double
-        var totalStr: String
+    @IBAction func changeScreens(_ sender: UIButton) {
+        performSegue(withIdentifier: "viewOneToViewTwo", sender: self)
     }
+    @IBAction func viewMonthlyScreen(_ sender: UIButton) {
+        performSegue(withIdentifier: "viewOneToThree", sender: self)
+    }
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        print(segue.identifier!)
+        if(segue.identifier == "viewOneToViewTwo") {
+            let secondController = segue.destination as! SecondViewController
+            secondController.totalArr = self.totalArray
+            print("success")
+        }
+        if(segue.identifier == "viewOneToThree") {
+            let thirdController = segue.destination as! ThirdViewController
+            thirdController.totalArr = self.totalArray
+        }
+    }
+    
     
     @IBOutlet weak var descriptionOutlet: UITextField!
     
     @IBOutlet weak var dateText_nonaction: UITextField!
     /* switches to the debit view controller */
     
-    @IBAction func backToDebit(_ sender: UIButton) {
-        let secondViewController = self.storyboard?.instantiateViewController(withIdentifier: "SecondViewController") as! SecondViewController
-        self.navigationController?.pushViewController(secondViewController, animated: true)
-    }
-    
-    //DO THIS LATER YOU FUCK
-    // String(format: "%.2f", var) //
-    
     //keeps track of date | description | amount at transaction | and the total balance at the time
     
     
     @IBAction func dateTextField(_ sender: UITextField) {
         let datePickerView: UIDatePicker = UIDatePicker()
-        datePickerView.datePickerMode = UIDatePickerMode.date
+        datePickerView.datePickerMode = UIDatePicker.Mode.date
         sender.inputView = datePickerView
-        datePickerView.addTarget(self, action: #selector(ViewController.datePickerValueChanged), for: UIControlEvents.valueChanged)
+        datePickerView.addTarget(self, action: #selector(ViewController.datePickerValueChanged), for: UIControl.Event.valueChanged)
         self.addDoneButtonOnKeyboard(view: sender)
     }
     
@@ -73,14 +87,12 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         dateText_nonaction.text = dateFormatter.string(from: sender.date)
     }
     
-    //this is just where you scroll through the table
-    @IBOutlet weak var transaction_display: UIScrollView!
-    
     //enter the amount, will be adding other stuff in the future
     @IBOutlet weak var enterAmount: UITextField!
     
     //this is the actual table which dynamically changes as you add more things to the
-    @IBOutlet weak var tableView: UITableView!
+    
+    @IBOutlet var tableView: UITableView! = UITableView()
     
     //the label that shows the total, there is a label above it with no outlet as it only shows "Total:"
     @IBOutlet weak var totalView: UILabel!
@@ -247,6 +259,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             .appendingPathComponent("MothersRecords.sqlite")
         
         
+        
         if sqlite3_open(fileURL.path, &db) != SQLITE_OK {
             print("error opening database")
         }
@@ -258,20 +271,27 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         
         
         let date = Date()
-        let dateForm = DateFormatter.localizedString(from: date, dateStyle: .medium, timeStyle: .none)
+        let dateForm:String = DateFormatter.localizedString(from: date, dateStyle: .medium, timeStyle: .none)
         self.dateText_nonaction.text = dateForm
+        
         
         self.addDoneButtonOnKeyboard(view: self.descriptionOutlet)
         self.addDoneButtonOnKeyboard(view: self.enterAmount)
-        tableView.dataSource = self
-        tableView.delegate = self
-        self.tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
-        self.total += self.readValues()
+        
+        if(tableView != nil) {
+            tableView.dataSource = self
+            tableView.delegate = self
+            self.tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
+            self.total += self.readValues()
+        }
+        
+        
         
         self.totalView.text = String(format: "%.2f", total)
         
         self.totalView.font = UIFont.boldSystemFont(ofSize: 20.0)
         self.setUILabelColorToRedOrGreen()
+        
     }
     
     func setUILabelColorToRedOrGreen() {
@@ -287,8 +307,8 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         
         let doneToolbar: UIToolbar = UIToolbar(frame: CGRect(x:0, y:0, width:320, height:50))
         doneToolbar.barStyle = UIBarStyle.blackOpaque
-        let flexSpace = UIBarButtonItem(barButtonSystemItem: UIBarButtonSystemItem.flexibleSpace, target: nil, action: nil)
-        let done: UIBarButtonItem = UIBarButtonItem(title: "Done", style: UIBarButtonItemStyle.done, target: view, action: #selector(UIResponder.resignFirstResponder))
+        let flexSpace = UIBarButtonItem(barButtonSystemItem: UIBarButtonItem.SystemItem.flexibleSpace, target: nil, action: nil)
+        let done: UIBarButtonItem = UIBarButtonItem(title: "Done", style: UIBarButtonItem.Style.done, target: view, action: #selector(UIResponder.resignFirstResponder))
         var items = [AnyObject]()
         items.append(flexSpace)
         items.append(done)
@@ -327,7 +347,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         print("You selected cell #\(int)! && totalStr from table is \"\(info.totalStr)\"")
     }
     
-    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCellEditingStyle, forRowAt indexPath: IndexPath) {
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         if editingStyle == .delete {
             delete(self.totalArray[indexPath.row]);
             self.totalArray.remove(at: indexPath.row)
@@ -436,7 +456,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             
             let index2 = str.index(str.startIndex, offsetBy: str.count-1-i) //will call succ 2 times
             let lastChar: Character = str[index2] //now we can index!
-            print(lastChar)
+            
             
             if lastChar == " " {
                 break;

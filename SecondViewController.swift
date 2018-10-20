@@ -2,33 +2,48 @@
 //  SecondViewController.swift
 //  finance_app
 //
-//  Created by AK on 6/12/18.
+//  Created by AK on 7/27/18.
 //  Copyright © 2018 AK. All rights reserved.
 //
-import Foundation
-import UIKit
 
-class SecondViewController: UIViewController {
-   // var int = 0
+import UIKit
+import Foundation
+
+class SecondViewController: ViewController {
     
-    @IBAction func backtoCash(_ sender: UIButton) {
-        let viewController:UIViewController = self.storyboard?.instantiateViewController(withIdentifier: "ViewController") as! ViewController
-        
-        self.navigationController?.pushViewController(viewController, animated: true)
+    @IBOutlet var secondTableView: UITableView! = UITableView()
+    
+    
+    @IBAction func changeViews(_ sender: Any) {
+        performSegue(withIdentifier: "viewTwoToViewOne", sender: self)
     }
     
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if(segue.identifier == "viewTwoToViewOne") {
+            _ = segue.destination as! ViewController
+            
+        }
+    }
     
-    
+    var totalArr: [ViewController.Info] = []
     
     override func viewDidLoad() {
         
-        super.viewDidLoad()
-        print("view loaded")
-        // Do any additional setup after loading the view, typically from a nib.
+        if(secondTableView != nil) {
+            secondTableView.delegate = self
+            secondTableView.dataSource = self
+            secondTableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell2")
+            secondTableView.reloadData()
+        }
     }
     
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return self.totalArr.count
+    }
+    
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell:UITableViewCell? = self.secondTableView.dequeueReusableCell(withIdentifier: "cell2")
+        cell?.textLabel?.text = self.totalArr[indexPath.row].totalStr
+        return cell!
     }
 }
